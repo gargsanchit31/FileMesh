@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -10,9 +11,17 @@
 #include <netdb.h>
 #define MYPORT 4950 // the port users will be connecting to
 #define MAXBUFLEN 1000000
-#define FILENAME "/home/anand/Desktop/socket_prog/FileMesh/udp/files/m.pdf"
+//#define FILENAME "/home/sanchit/Desktop/m.pdf"
 #define BACKLOG 10
-int main() {
+using namespace std;
+
+int main(int argc, char* argv[]) {
+
+	if(argc!=2){
+		cout<<"usage: <executable> <path/to/file>"<<endl;
+		return -1;
+	}
+
 	int sockfd,bd,new_fd;
 	struct sockaddr_in my_addr;
 	char buf[MAXBUFLEN];
@@ -27,7 +36,7 @@ int main() {
 	memset(&my_addr, 0, sizeof my_addr);
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(MYPORT);
-	my_addr.sin_addr.s_addr = inet_addr("10.3.131.73");
+	my_addr.sin_addr.s_addr = inet_addr("10.3.131.176");
 	//inet_pton(AF_INET, "127.0.0.1", &(my_addr.sin_addr));
 	
 	bd = bind(sockfd, (struct sockaddr *) &my_addr, sizeof my_addr);
@@ -58,7 +67,7 @@ int main() {
 	printf("length = %d",file_size);
 	printf("\n");
 	FILE *fout;
-	fout = fopen(FILENAME, "wb");
+	fout = fopen(argv[1], "wb");
 	while(remain_data >0 && (numbytes = recv(new_fd, buf, MAXBUFLEN-1 , 0)) >= 0 ) {
 		fwrite(buf, sizeof(char), numbytes, fout);
         remain_data -= numbytes;

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include <stdlib.h>
 #include <unistd.h>
 #include <errno.h>
@@ -13,9 +14,17 @@
 
 #define MYPORT 4950 // the port users will be connecting to
 #define MAXBUFLEN 100000
-#define FILENAME "/home/anand/Desktop/socket_prog/FileMesh/udp/files/a.pdf"
+//#define FILENAME "/home/anand/Desktop/socket_prog/FileMesh/udp/files/a.pdf"
+
+using namespace std;
 
 int main(int argc, char *argv[]) {
+
+	if(argc!=2){
+		cout<<"usage: <executable> <path/to/file>"<<endl;
+		return -1;
+	}
+
 	int sockfd;
 	char msg[MAXBUFLEN];
 	struct sockaddr_storage their_addr;
@@ -41,7 +50,7 @@ int main(int argc, char *argv[]) {
 	their_add.sin_family = AF_INET; // host byte order
 	their_add.sin_port = htons(MYPORT); // short, network byte order
 	//their_add.sin_addr = *((struct in_addr *)he->h_addr);
-	their_add.sin_addr.s_addr = inet_addr("10.3.131.73");
+	their_add.sin_addr.s_addr = inet_addr("10.3.131.176");
 	//inet_pton(AF_INET, "10.3.131.121", &(their_add.sin_addr)); 
 	bzero(&(their_add.sin_zero), 8);
 	
@@ -59,7 +68,7 @@ int main(int argc, char *argv[]) {
 	}
 	
         
-    FILE *file1 = fopen (FILENAME, "rb");
+    FILE *file1 = fopen (argv[1], "rb");
 	if (file1!=NULL) {
 		fseek(file1,0,SEEK_END);
 		lSize = ftell(file1);
