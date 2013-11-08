@@ -13,7 +13,7 @@
 
 #define MYPORT 4950 // the port users will be connecting to
 #define MAXBUFLEN 100000
-#define FILENAME "/home/abhilash/messmenu.pdf"
+#define FILENAME "/home/abhilash/Downloads/te.avi"
 
 int main(int argc, char *argv[]) {
 	int sockfd;

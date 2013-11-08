@@ -10,7 +10,7 @@
 #include <netdb.h>
 #define MYPORT 4950 // the port users will be connecting to
 #define MAXBUFLEN 1000000
-#define FILENAME "/home/abhilash/year3/sem1/378/project1/m.pdf"
+#define FILENAME "/home/abhilash/year3/sem1/378/project1/te.avi"
 #define BACKLOG 10
 int main() {
 	int sockfd,bd,new_fd;
