@@ -13,7 +13,7 @@
 
 #define MYPORT 4950 // the port users will be connecting to
 #define MAXBUFLEN 100000
-#define FILENAME "/home/abhilash/Downloads/te.avi"
+#define FILENAME "/home/anand/Desktop/socket_prog/FileMesh/udp/files/a.pdf"
 
 int main(int argc, char *argv[]) {
 	int sockfd;
@@ -28,10 +28,10 @@ int main(int argc, char *argv[]) {
 	char file_size[256];
     struct stat file_stat;
         
-	if ((he=gethostbyname("localhost")) == NULL) {
+	/*if ((he=gethostbyname("localhost")) == NULL) {
 		perror("gethostbyname");
 		exit(1);
-	}
+	}*/
 	/*
 	memset(&my_addr, 0, sizeof my_addr);
 	my_addr.sin_family = AF_INET;
@@ -40,7 +40,9 @@ int main(int argc, char *argv[]) {
 	
 	their_add.sin_family = AF_INET; // host byte order
 	their_add.sin_port = htons(MYPORT); // short, network byte order
-	their_add.sin_addr = *((struct in_addr *)he->h_addr);
+	//their_add.sin_addr = *((struct in_addr *)he->h_addr);
+	their_add.sin_addr.s_addr = inet_addr("10.3.131.73");
+	//inet_pton(AF_INET, "10.3.131.121", &(their_add.sin_addr)); 
 	bzero(&(their_add.sin_zero), 8);
 	
 	sockfd = socket(AF_INET,SOCK_STREAM,0);

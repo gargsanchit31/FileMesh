@@ -10,7 +10,7 @@
 #include <netdb.h>
 #define MYPORT 4950 // the port users will be connecting to
 #define MAXBUFLEN 1000000
-#define FILENAME "/home/abhilash/year3/sem1/378/project1/te.avi"
+#define FILENAME "/home/anand/Desktop/socket_prog/FileMesh/udp/files/m.pdf"
 #define BACKLOG 10
 int main() {
 	int sockfd,bd,new_fd;
@@ -27,7 +27,8 @@ int main() {
 	memset(&my_addr, 0, sizeof my_addr);
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(MYPORT);
-	inet_pton(AF_INET, "127.0.0.1", &(my_addr.sin_addr));
+	my_addr.sin_addr.s_addr = inet_addr("10.3.131.73");
+	//inet_pton(AF_INET, "127.0.0.1", &(my_addr.sin_addr));
 	
 	bd = bind(sockfd, (struct sockaddr *) &my_addr, sizeof my_addr);
 	if (bd == -1) {
