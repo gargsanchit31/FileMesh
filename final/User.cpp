@@ -13,13 +13,12 @@
 #include <netdb.h>
 #include "parser.h"
 #include "md5.h"
-#define UDPPORT 6400
 #define TCPPORT 6401
 #define MAXBUFLEN 100000
 #define BACKLOG 64
 #define confFile "FileMesh.cfg"
 //#define UDPCHUNK 100
-#include<sstream>
+//#include <sstream>
 
 #include <vector>
 #define DELIM ":"
@@ -30,7 +29,6 @@ vector<struct node> nodes;
 void sendUDPRequest(int nodeID, char* option, const char* md5, char* myIP) {
 	char* msg;
 	size_t msg_size =0;
-	//char* myIP = getmyIP();
 	struct node node_info = nodes[nodeID];
 	int sockfd;
 	struct sockaddr_storage their_addr;
@@ -46,7 +44,7 @@ void sendUDPRequest(int nodeID, char* option, const char* md5, char* myIP) {
     
 	memset(&my_addr, 0, sizeof my_addr);
 	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(UDPPORT);
+	my_addr.sin_port = htons(nodes[nodeID].PORT);
 	my_addr.sin_addr.s_addr = inet_addr(node_info.IP);
 	
 	
@@ -60,6 +58,7 @@ void sendUDPRequest(int nodeID, char* option, const char* md5, char* myIP) {
 		exit(1);
 	}
 	printf("talker: sent %d bytes\n", numbytes);
+	cout<<msg<<" to node: "<<nodeID<<endl;
 	close(sockfd);
 }
 
@@ -167,6 +166,7 @@ void acceptTCP(int sockfd, char* option, char* filename) {
 	struct sockaddr_storage their_addr;
 	
 	unsigned int sin_size = sizeof(struct sockaddr_in);
+	printf("listener: waiting to accept...\n");
 	if ((new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size)) == -1) {
 		perror("accept");
 	}

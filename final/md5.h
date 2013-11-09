@@ -1,11 +1,11 @@
 #ifndef _MD5
 #define _MD5
-#include<iostream>
-#include<string>
-#include<stdlib.h>
-#include<string>
-#include<fstream>
-#include<math.h>
+#include <iostream>
+#include <string>
+#include <stdlib.h>
+#include <string>
+#include <fstream>
+#include <math.h>
 using namespace std;
 
 string md5sum(string filename) {
@@ -33,7 +33,8 @@ unsigned int hex_to_int(string k) {
 //    	cout<<x<<endl;
 	return x;
 }
-int md5sumhash 	(string s, int k){
+int md5sumhash 	(char* m, int k){
+	string s = (string)m;
 	char szNumbers[36];
 	string a,b,c,d;
 	
