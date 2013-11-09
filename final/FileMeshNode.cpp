@@ -44,6 +44,100 @@ void parseMsg(char* msg1, char **option, char **md5, char **ip, int& port){
 	port = atoi(pch);
 }
 
+int connectTCP(char *ip, int port){
+	int sockfd;
+	struct sockaddr_in their_add;
+	
+	their_add.sin_family = AF_INET; // host byte order
+	cout<<"in connectTCP: port no. "<<port<<endl;
+	their_add.sin_port = htons(port); // short, network byte order
+	their_add.sin_addr.s_addr = inet_addr(ip);	//set the ip
+	bzero(&(their_add.sin_zero), 8);	//equivilent to memset
+	
+	sockfd = socket(AF_INET,SOCK_STREAM,0);
+	if (sockfd == -1) {
+		perror("listener: tcp socket");
+	}
+	
+	if (connect(sockfd, (struct sockaddr *)&their_add,sizeof(struct sockaddr)) == -1) {
+		cout<<"dsfsafsdaf"<<endl;
+		perror("connect");
+		exit(1);
+	}
+	return sockfd;
+}
+
+void storeFile(int socketfd, char* md5){
+	char buf[MAXBUFLEN];
+	ssize_t numbytes=-1;
+	if ((recv(socketfd, buf, MAXBUFLEN-1, 0)) == 0){
+		printf("Error at recv\n");
+	}
+
+    int file_size = atoi(buf);	//first recieved data is file size
+    int remain_data = file_size;    
+	printf("length = %d",file_size);
+	printf("\n");
+	FILE *fout;
+	char* file_path = whoami.Folder_Path;
+	strcat(file_path,md5);
+	fout = fopen(file_path, "wb");
+	while(remain_data >0 && (numbytes = recv(socketfd, buf, MAXBUFLEN-1 , 0)) >= 0 ) {
+		fwrite(buf, sizeof(char), numbytes, fout);
+        remain_data -= numbytes;
+        printf("Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);
+	}
+	printf("Received file!\n");
+	fclose(fout);
+	close(socketfd);
+}
+
+void sendFile(char* md5, int socketid) {
+	long lSize;
+	char* buffer;
+	size_t result;
+	char file_size[256];
+	char* file_path = whoami.Folder_Path;
+	strcat(file_path,md5);
+	FILE *file1 = fopen (file_path, "rb");
+		if (file1!=NULL) {
+			fseek(file1,0,SEEK_END);
+			lSize = ftell(file1);
+			rewind(file1);
+			printf("File size : %d\n",lSize);
+			sprintf(file_size, "%d", lSize);
+			
+			int len = send(socketid, file_size, sizeof(file_size), 0);
+			printf("len = %d\n", len);
+			if (len < 0) {
+				fprintf(stderr, "Error! %s", strerror(errno));
+				exit(EXIT_FAILURE);
+			}
+			int numbytes;	
+			long fs = lSize;
+			char line[110];
+			while(fs > 0) {
+				int chunk= 100;
+				if(fs < 100){
+					chunk = fs;
+				}
+				fread(line,1,chunk,file1);	
+				//printf("chunk is %d, strlen is %d", chunk, strlen(line));
+				
+				if ((numbytes = send(socketid, line, chunk, 0)) == -1) {
+					perror("talker: sendto");
+					exit(1);
+				}
+				printf("talker: sent %d bytes\n", numbytes);
+				fs-=numbytes;
+				printf("talker: remaining %d bytes\n", fs);
+			}
+			printf("File sent!\n");
+		}
+		fclose(file1);
+		close(socketid);
+}
+
 void sendUDPRequest(int nodeID, char* msg) {
 	size_t msg_size =0;
 	//char* myIP = getmyIP();
@@ -110,12 +204,18 @@ void listenUDPRequest(){
 		cout<<option<<" "<<md5<<" "<<ip<<" "<<port<<endl;
 		int node_no = md5sumhash(md5,nodes.size());
 
+		cout<<node_no<<","<<whoami.ID<<endl;
+
 		if(node_no==whoami.ID){
+			cout<<"yes ip matched\n"<<endl;
+			int tcpsocket = connectTCP(ip, port);
 			if(strcmp(option,"Get")==0){
 				//send the file to client
+				sendFile(md5,tcpsocket);
 			}
 			else{
 				//recieve and store the file from client
+				storeFile(tcpsocket,md5);
 			}
 		}
 		else{
@@ -146,7 +246,7 @@ int main(int argc, char* argv[]){
 		cout<<"ip not found";
 		return -1;
 	}
-	//cout<<whoami.ID<<endl;
+	cout<<whoami.ID<<","<<whoami.IP<<","<<whoami.PORT<<endl;
 	listenUDPRequest();
 	return 0;
 }

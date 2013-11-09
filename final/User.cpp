@@ -92,13 +92,13 @@ int bindOnTCP(char* myIP) {
 	return sockfd;
 }
 
-void storefileTCP(char* filename, int socketid) {
+void storefileTCP(char* file_path, int socketid) {
 	long lSize;
 	char* buffer;
 	size_t result;
 	char file_size[256];
 	
-	FILE *file1 = fopen (filename, "rb");
+	FILE *file1 = fopen (file_path, "rb");
 		if (file1!=NULL) {
 			fseek(file1,0,SEEK_END);
 			lSize = ftell(file1);
@@ -137,7 +137,7 @@ void storefileTCP(char* filename, int socketid) {
 		close(socketid);
 }
 
-void receivefileTCP(char* filename, int socketid) {
+void receivefileTCP(char* file_path, int socketid) {
 	/* Receiving file size */
 	char buf[10000];
    	if ((recv(socketid, buf, 9999, 0)) == 0) {
@@ -148,7 +148,7 @@ void receivefileTCP(char* filename, int socketid) {
 	printf("length = %d",file_size);
 	printf("\n");
 	FILE *fout;
-	fout = fopen(filename, "wb");
+	fout = fopen(file_path, "wb");
 	ssize_t numbytes=0;
 	while(remain_data >0 && (numbytes = recv(socketid, buf, 9999 , 0)) >= 0 ) {
 		fwrite(buf, sizeof(char), numbytes, fout);
@@ -171,6 +171,7 @@ void acceptTCP(int sockfd, char* option, char* filename) {
 		perror("accept");
 	}
 	
+	cout<<"connection accepted"<<endl;
 	if(strcmp(option, "Store")==0){
 		storefileTCP(filename,new_fd);		
 	}
@@ -185,7 +186,7 @@ void acceptTCP(int sockfd, char* option, char* filename) {
 int main(int argc, char* argv[]) {
 	char* myIP;
 	if(argc!=4) {
-		cout<<"usage:<executable> <nodeID> <Store or Get> <filename>"<<endl;
+		cout<<"usage:<executable> <nodeID> <Store or Get> <filename/md5sum>"<<endl;
 		return -1;
 	}
 	if(!(strcmp(argv[2], "Store")==0) and !(strcmp(argv[2] , "Get") ==0)){
@@ -195,9 +196,18 @@ int main(int argc, char* argv[]) {
 	myIP = getmyIP();
 	parse_conf_file(confFile,nodes);
 	string filename = argv[3];
-	string md5 = md5sum(filename);
+	string md5;
+	if((strcmp(argv[2],"Store")) == 0) {
+		md5 = md5sum(filename);
+	}
+	else {
+		md5=(string)argv[3];
+	}
+	
 	const char* md =md5.c_str();
+	cout<<md<<" "<<argv[3]<<endl;
 	int nodeid = atoi(argv[1]);
+	cout<<nodeid<<endl;
 	int tcpsockfd = bindOnTCP(myIP);
 	sendUDPRequest(nodeid,argv[2],md,myIP);
 	acceptTCP(tcpsockfd,argv[2],argv[3]);
