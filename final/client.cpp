@@ -151,6 +151,29 @@ void storefileTCP(char* filename, int socketid) {
 		close(socketid);
 }
 
+void receivefileTCP(char* filename, int socketid) {
+	/* Receiving file size */
+	char buf[10000];
+   	if ((recv(socketid, buf, 9999, 0)) == 0) {
+		printf("Error at recv\n");
+	}
+    int file_size = atoi(buf);
+    int remain_data = file_size;    
+	printf("length = %d",file_size);
+	printf("\n");
+	FILE *fout;
+	fout = fopen(filename, "wb");
+	ssize_t numbytes=0;
+	while(remain_data >0 && (numbytes = recv(socketid, buf, 9999 , 0)) >= 0 ) {
+		fwrite(buf, sizeof(char), numbytes, fout);
+        remain_data -= numbytes;
+        fprintf(stdout, "Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);
+	}
+	printf("Received file!\n");
+	fclose(fout);
+	close(socketid);
+}
+
 void acceptTCP(int sockfd, char* option, char* filename) {
 	int new_fd;
 	
@@ -165,10 +188,10 @@ void acceptTCP(int sockfd, char* option, char* filename) {
 		storefileTCP(filename,new_fd);		
 	}
 	else if(strcmp(option, "Get")==0){
-		
+		receivefileTCP(filename,new_fd);
 	}
 	else{
-		
+		cout<<"Something went wrong. We will figure it out soon."<<endl;		
 	}
 }
 //input nodeid, request tpye, filename
