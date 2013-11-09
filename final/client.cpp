@@ -26,19 +26,6 @@
 using namespace std;
 
 vector<struct node> nodes;
-/*
-char* getmyIP() {
-	int fd;
-	struct ifreq ifr;
-	fd = socket(AF_INET, SOCK_DGRAM, 0);
-	ifr.ifr_addr.sa_family = AF_INET;
-	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
-	ioctl(fd, SIOCGIFADDR, &ifr);
-	close(fd);
-	//cout<<inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr)<<endl;
-	return inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
-}*/
-
 
 void sendUDPRequest(int nodeID, char* option, const char* md5, char* myIP) {
 	char* msg;
