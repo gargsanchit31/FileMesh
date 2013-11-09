@@ -150,7 +150,7 @@ void receivefileTCP(char* file_path, int socketid) {
 	FILE *fout;
 	fout = fopen(file_path, "wb");
 	ssize_t numbytes=0;
-	while(remain_data >0 && (numbytes = recv(socketid, buf, 9999 , 0)) >= 0 ) {
+	while(remain_data >0 && (numbytes = recv(socketid, buf, 9999 , 0)) > 0 ) {
 		fwrite(buf, sizeof(char), numbytes, fout);
         remain_data -= numbytes;
         fprintf(stdout, "Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);

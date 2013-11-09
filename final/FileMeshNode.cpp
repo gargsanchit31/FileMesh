@@ -16,7 +16,7 @@
 #define TCPPORT 6401
 #define MAXBUFLEN 100000
 #define BACKLOG 64
-#define confFile "FileMesh.cfg"
+#define CONF_FILE "./FileMesh.cfg"
 #include <sstream>
 
 #include <vector>
@@ -82,7 +82,7 @@ void storeFile(int socketfd, char* md5){
 	char* file_path = whoami.Folder_Path;
 	strcat(file_path,md5);
 	fout = fopen(file_path, "wb");
-	while(remain_data >0 && (numbytes = recv(socketfd, buf, MAXBUFLEN-1 , 0)) >= 0 ) {
+	while(remain_data >0 && (numbytes = recv(socketfd, buf, MAXBUFLEN-1 , 0)) > 0 ) {
 		fwrite(buf, sizeof(char), numbytes, fout);
         remain_data -= numbytes;
         printf("Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);
@@ -228,24 +228,13 @@ void listenUDPRequest(){
 
 int main(int argc, char* argv[]){
 	if(argc!=2){
-		cout<<"usage: <executable> <confugration file>"<<endl;
+		cout<<"usage: <executable> <Node ID>"<<endl;
 		return -1;
 	}
-	bool flag=false;
 
-
-	parse_conf_file(argv[1],nodes);
-	char* myIP = getmyIP();
-	for(int i=0;i<nodes.size();i++){
-		if(strcmp(myIP, nodes[i].IP)==0){
-			whoami=nodes[i];flag=true;
-			break;
-		}
-	}
-	if(!flag){
-		cout<<"ip not found";
-		return -1;
-	}
+	parse_conf_file(CONF_FILE,nodes);
+	int n_id = atoi(argv[1]);
+	whoami=nodes[n_id];
 	cout<<whoami.ID<<","<<whoami.IP<<","<<whoami.PORT<<endl;
 	listenUDPRequest();
 	return 0;
