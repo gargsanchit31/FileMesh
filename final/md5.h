@@ -53,6 +53,24 @@ int md5sumhash 	(string s, int k){
 	int nodenum = (z%k + (b32 * y%k)%k + ( ((b32*b32)%k )*x%k)%k + (((b32*b32*b32)%k)*w%k)%k )%k;
 	return nodenum;
 }
+
+char* getmyIP() {
+	int fd;
+	struct ifreq ifr;
+	fd = socket(AF_INET, SOCK_DGRAM, 0);
+	/* I want to get an IPv4 IP address */
+	ifr.ifr_addr.sa_family = AF_INET;
+	/* I want IP address attached to "eth0" */
+	strncpy(ifr.ifr_name, "eth0", IFNAMSIZ-1);
+	ioctl(fd, SIOCGIFADDR, &ifr);
+	close(fd);
+	//cout<<inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr)<<endl;
+	return inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
+}
+
+
+
+
 /*int main(int argc, char* argv[]) {
 	
 	string s = argv[1];
