@@ -50,7 +50,7 @@ int main(int argc, char *argv[]) {
 	their_add.sin_family = AF_INET; // host byte order
 	their_add.sin_port = htons(MYPORT); // short, network byte order
 	//their_add.sin_addr = *((struct in_addr *)he->h_addr);
-	their_add.sin_addr.s_addr = inet_addr("10.3.131.176");
+	their_add.sin_addr.s_addr = inet_addr("10.3.131.122");
 	//inet_pton(AF_INET, "10.3.131.121", &(their_add.sin_addr)); 
 	bzero(&(their_add.sin_zero), 8);
 	
