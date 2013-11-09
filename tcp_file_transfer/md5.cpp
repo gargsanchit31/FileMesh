@@ -57,7 +57,7 @@ int main(int argc, char* argv[]) {
 	//cout<<s<<endl;
 	s = md5sum(s);
 	cout<<s<<endl;	
-	int k = md5sumhash(s,2);
-	cout<<"mapping: "<<nodenum<<endl;
+	int k = md5sumhash(s,10);
+	cout<<"mapping: "<<k<<endl;
 	return 1;
 }
