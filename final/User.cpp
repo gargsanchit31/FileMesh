@@ -14,7 +14,7 @@
 #include "parser.h"
 #include "md5.h"
 #define TCPPORT 6401
-#define MAXBUFLEN 100000
+#define MAXBUFLEN 10000
 #define BACKLOG 64
 #define confFile "FileMesh.cfg"
 //#define UDPCHUNK 100
@@ -78,6 +78,13 @@ int bindOnTCP(char* myIP) {
 	my_addr.sin_port = htons(TCPPORT);
 	my_addr.sin_addr.s_addr = inet_addr(myIP);
 	
+
+	int yes=1;
+	if (setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int)) == -1) {
+		perror("setsockopt");
+		exit(1);
+	}
+
 	bd = bind(sockfd, (struct sockaddr *) &my_addr, sizeof my_addr);
 	if (bd == -1) {
 		close(sockfd);
@@ -96,7 +103,7 @@ void storefileTCP(char* file_path, int socketid) {
 	long lSize;
 	char* buffer;
 	size_t result;
-	char file_size[256];
+	char file_size[10];
 	
 	FILE *file1 = fopen (file_path, "rb");
 		if (file1!=NULL) {
@@ -106,7 +113,7 @@ void storefileTCP(char* file_path, int socketid) {
 			printf("File size : %d\n",lSize);
 			sprintf(file_size, "%d", lSize);
 			
-			int len = send(socketid, file_size, sizeof(file_size), 0);
+			int len = send(socketid, file_size, 10, 0);
 			printf("len = %d\n", len);
 			if (len < 0) {
 				fprintf(stderr, "Error! %s", strerror(errno));
@@ -137,27 +144,32 @@ void storefileTCP(char* file_path, int socketid) {
 		close(socketid);
 }
 
-void receivefileTCP(char* file_path, int socketid) {
-	/* Receiving file size */
-	char buf[10000];
-   	if ((recv(socketid, buf, 9999, 0)) == 0) {
+void receivefileTCP(char* md5, int socketfd){
+	char buf[MAXBUFLEN];
+	ssize_t numbytes=-1;
+	int recv_size;
+	if ((recv_size = recv(socketfd, buf, MAXBUFLEN-1, 0)) == 0){
 		printf("Error at recv\n");
 	}
-    int file_size = atoi(buf);
-    int remain_data = file_size;    
+	
+    int file_size = atoi(buf);	//first recieved data is file size
+    int remain_data = file_size - (recv_size - 10);    
 	printf("length = %d",file_size);
 	printf("\n");
 	FILE *fout;
-	fout = fopen(file_path, "wb");
-	ssize_t numbytes=0;
-	while(remain_data >0 && (numbytes = recv(socketid, buf, 9999 , 0)) > 0 ) {
+	fout = fopen(md5, "wb");
+	fwrite(buf+10, sizeof(char), recv_size-10, fout);
+
+	while(remain_data >0) {
+		numbytes = recv(socketfd, buf, MAXBUFLEN-1 , 0) ;
 		fwrite(buf, sizeof(char), numbytes, fout);
         remain_data -= numbytes;
-        fprintf(stdout, "Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);
+        printf("Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);
 	}
 	printf("Received file!\n");
+	cout<<recv_size<<endl;
 	fclose(fout);
-	close(socketid);
+	close(socketfd);
 }
 
 void acceptTCP(int sockfd, char* option, char* filename) {

@@ -14,7 +14,7 @@
 #include "parser.h"
 #include "md5.h"
 #define TCPPORT 6401
-#define MAXBUFLEN 100000
+#define MAXBUFLEN 10000
 #define BACKLOG 64
 #define CONF_FILE "./FileMesh.cfg"
 #include <sstream>
@@ -70,24 +70,29 @@ int connectTCP(char *ip, int port){
 void storeFile(int socketfd, char* md5){
 	char buf[MAXBUFLEN];
 	ssize_t numbytes=-1;
-	if ((recv(socketfd, buf, MAXBUFLEN-1, 0)) == 0){
+	int recv_size;
+	if ((recv_size = recv(socketfd, buf, MAXBUFLEN-1, 0)) == 0){
 		printf("Error at recv\n");
 	}
-
+	
     int file_size = atoi(buf);	//first recieved data is file size
-    int remain_data = file_size;    
+    int remain_data = file_size - (recv_size - 10);    
 	printf("length = %d",file_size);
 	printf("\n");
 	FILE *fout;
 	char* file_path = whoami.Folder_Path;
 	strcat(file_path,md5);
 	fout = fopen(file_path, "wb");
-	while(remain_data >0 && (numbytes = recv(socketfd, buf, MAXBUFLEN-1 , 0)) > 0 ) {
+	fwrite(buf+10, sizeof(char), recv_size-10, fout);
+
+	while(remain_data >0) {
+		numbytes = recv(socketfd, buf, MAXBUFLEN-1 , 0) ;
 		fwrite(buf, sizeof(char), numbytes, fout);
         remain_data -= numbytes;
         printf("Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);
 	}
 	printf("Received file!\n");
+	cout<<recv_size<<endl;
 	fclose(fout);
 	close(socketfd);
 }
@@ -96,7 +101,7 @@ void sendFile(char* md5, int socketid) {
 	long lSize;
 	char* buffer;
 	size_t result;
-	char file_size[256];
+	char file_size[10];
 	char* file_path = whoami.Folder_Path;
 	strcat(file_path,md5);
 	FILE *file1 = fopen (file_path, "rb");
@@ -107,7 +112,7 @@ void sendFile(char* md5, int socketid) {
 			printf("File size : %d\n",lSize);
 			sprintf(file_size, "%d", lSize);
 			
-			int len = send(socketid, file_size, sizeof(file_size), 0);
+			int len = send(socketid, file_size, 10, 0);
 			printf("len = %d\n", len);
 			if (len < 0) {
 				fprintf(stderr, "Error! %s", strerror(errno));
@@ -137,6 +142,9 @@ void sendFile(char* md5, int socketid) {
 		fclose(file1);
 		close(socketid);
 }
+
+
+
 
 void sendUDPRequest(int nodeID, char* msg) {
 	size_t msg_size =0;
