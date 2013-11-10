@@ -12,46 +12,19 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <sstream>
+#include <vector>
+
 #include "parser.h"			//The functions that parse the config file 
-#include "md5.h"			//The md5sum hash and some other functions and calculations
-//#define TCPPORT 6401		
+#include "md5.h"			//The md5sum hash and some other functions and calculations	
 #define MAXBUFLEN 10000		//The maximum buffer length for send and recv in the TCP sockets
 #define BACKLOG 6401        //Backlogged connections
 #define CONF_FILE "./FileMesh.cfg"	//The configuration file
-#include <sstream>
-#include <vector>
-#define DELIM ":"			//Delimiter used for the message that the client sends to the node
+
 using namespace std;
 
 vector<struct node> nodes;	//The vector that contains all the nodes' information after parsing 
 struct node whoami;			//struct to let a node know about itself!
-
-/**
-This parseMsg(..) function takes the message that the client sends to the node
-and parses, recovers the information about Store/Get operation, md5sum of the file,
-ip address of the client and the tcp port on which it listens.
-*/
-void parseMsg(char* msg1, char **option, char **md5, char **ip, int& port){
-	char *pch;									//used to temporarily store the item recovered from msg
-	char msg[100];								//used to convert msg1 to char*
-	strcpy(msg,msg1);							//copy to msg, msg1
-	cout<<"msg in parsemsg: "<<msg<<"   "<<msg1<<endl; 
-	pch = strtok (msg,":");						//recover upto first occurence of ":"
-	*option = (char*)malloc(10*sizeof(char));	
-	strcpy(*option,pch);						//copy characters recovered in pch to options
-	pch = strtok (NULL,":");					//recover upto second occurence of ":"
-	*md5 = (char*)malloc(40*sizeof(char));
-	strcpy(*md5,pch);							//copy characters recovered in pch to md5
-	pch = strtok (NULL,":");
-	*ip = (char*)malloc(10*sizeof(char));
-	strcpy(*ip,pch);							//copy characters recovered in pch to ip
-	pch = strtok (NULL,":");
-	cout<<"port length before converting to integer: "<<strlen(pch)<<endl;
-	sprintf(pch, "%.*s", 4, pch + 0);
-	port = atoi(pch);
-								//convert pch to int to recover integer port
-	cout<<"value of port: "<<port<<endl;
-}
 
 /**
 The connectTCP(..) function opens a SOCK_STREAM socket to establish a TCP connection 
@@ -62,7 +35,6 @@ int connectTCP(char *ip, int port){
 	struct sockaddr_in their_add;				//The struct used to store all the information about the client
 	
 	their_add.sin_family = AF_INET; 			// host byte order
-	//cout<<"in connectTCP: port no. "<<port<<endl;
 	their_add.sin_port = htons(port); 			// port in short, network byte order
 	their_add.sin_addr.s_addr = inet_addr(ip);	//set the client's ip
 	bzero(&(their_add.sin_zero), 8);			//equivalent to memset
@@ -73,7 +45,6 @@ int connectTCP(char *ip, int port){
 	}
 	
 	if (connect(sockfd, (struct sockaddr *)&their_add,sizeof(struct sockaddr)) == -1) {		//Connect to the client
-		//cout<<"dsfsafsdaf"<<endl;
 		perror("connection");
 		exit(1);								//Exit in case of an error
 	}
@@ -96,14 +67,11 @@ void storeFile(int socketfd, char* md5){
 	
     int file_size = atoi(buf);					//first recieved data is file size
     int remain_data = file_size - (recv_size - 10);		//calculate data remaining.    
-	printf("length = %d",file_size);
-	printf("\n");
+	printf("length = %d\n",file_size);
 	FILE *fout;									//file to write
 	char* file_path = whoami.Folder_Path;		//get the node's file path to store the file	
 	char tmp[100];
-	cout<<"file_path: "<<file_path<<endl;
 	strcpy(tmp,file_path);
-	cout<<"tmp: "<<tmp<<endl;
 	strcat(tmp,md5);						//append to it the md5sum
 	fout = fopen(tmp, "wb");				//open the file to write
 	fwrite(buf+10, sizeof(char), recv_size-10, fout);	//write the first data. This is to adjust the bytes that were received with file size.
@@ -115,7 +83,6 @@ void storeFile(int socketfd, char* md5){
         printf("Received %d bytes, To receive :- %d bytes\n", numbytes, remain_data);
 	}
 	printf("Received file!\n");
-	cout<<recv_size<<endl;
 	fclose(fout);								//close file
 	close(socketfd);							//close socket
 }
@@ -131,18 +98,17 @@ void sendFile(char* md5, int socketid) {
 	char file_size[10];									//For Storing file size 
 	char* file_path = whoami.Folder_Path;				//Get the node's file path
 	char tmp[100];
-	cout<<"file_path: "<<file_path<<endl;
+
 	strcpy(tmp,file_path);
-	cout<<"tmp: "<<tmp<<endl;
+	
 	strcat(tmp,md5);								//Concatenate the md5 (filename)
-	cout<<"before oprening file: "<<socketid<<" "<<file_path<<" "<<tmp<<endl;
+	//cout<<"before oprening file: "<<socketid<<" "<<file_path<<" "<<tmp<<endl;
 	FILE *file1 = fopen (tmp, "rb");				//open the file for reading
 		if (file1!=NULL) {	
 			fseek(file1,0,SEEK_END);					//Seek till the end of file
 			lSize = ftell(file1);						//Get file size with ftell
 			printf("File size : %d\n",lSize);
 			rewind(file1);								//go back to the beginning of the file	
-			//printf("File size : %d\n",lSize);
 			sprintf(file_size, "%d", lSize);			//lSize sent as char*
 			
 			int len = send(socketid, file_size, 10, 0);	//send the file size over the socket
@@ -160,7 +126,6 @@ void sendFile(char* md5, int socketid) {
 					chunk = fs;							//modify chunk if less than chunk to send
 				}
 				fread(line,1,chunk,file1);				//read the file
-				//printf("chunk is %d, strlen is %d", chunk, strlen(line));
 				
 				if ((numbytes = send(socketid, line, chunk, 0)) == -1) {	//sending bytes over TCP
 					perror("talker: sendto");
@@ -184,22 +149,20 @@ void sendFile(char* md5, int socketid) {
 sendUDPRequest(..) sends the client's message to the correct node in case the current node's ID
 does not match the md5sum hash that it calculates.
 */
-void sendUDPRequest(int nodeID, char* msg) {
+void sendUDPRequest(int nodeID, struct Message* msg) {
 	size_t msg_size =0;									//size of the message
-	//char* myIP = getmyIP();
 	int sockfd;											//Socket for UDP connection
-	struct sockaddr_in my_addr;							//Struct to fill in connection details	
+	struct sockaddr_in their_addr;						//Struct to fill in connection details	
 	
-	msg_size = strlen(msg);								//calculate message size
-	//cout<<msg_size << " " << sizeof(char*)<<endl;
+	msg_size = sizeof(struct Message);					//calculate message size
 	
 	socklen_t addr_len;									
 	ssize_t numbytes=0;									//For number of bytes sent
     
-	memset(&my_addr, 0, sizeof my_addr);				//Padding in my_addr
-	my_addr.sin_family = AF_INET;						//socket family
-	my_addr.sin_port = htons(nodes[nodeID].PORT);		//Network byte order
-	my_addr.sin_addr.s_addr = inet_addr(nodes[nodeID].IP); 	//The correct node's IP
+	memset(&their_addr, 0, sizeof their_addr);					//Padding in my_addr
+	their_addr.sin_family = AF_INET;							//socket family
+	their_addr.sin_port = htons(nodes[nodeID].PORT);			//Network byte order
+	their_addr.sin_addr.s_addr = inet_addr(nodes[nodeID].IP); 	//The correct node's IP
 	
 	
 	sockfd = socket(AF_INET,SOCK_DGRAM,0);				//Create the socket
@@ -207,10 +170,12 @@ void sendUDPRequest(int nodeID, char* msg) {
 		perror("listener: socket");
 	}	
 	
-	if ((numbytes = sendto(sockfd, msg, msg_size, 0, (struct sockaddr *)&my_addr, sizeof my_addr)) == -1) {		//Send the message to the node
+	//Send the message to the node
+	if ((numbytes = sendto(sockfd, (char *)msg, msg_size, 0, (struct sockaddr *)&their_addr, sizeof their_addr)) == -1) {
 		perror("talker: sendto");						//Error check
 		exit(1);
 	}
+
 	printf("talker: sent %d bytes\n", numbytes);
 	close(sockfd);										//Close the socket
 }
@@ -226,7 +191,8 @@ void listenUDPRequest(){
 	char buf[MAXBUFLEN];									//Buffer to receive message
 	struct sockaddr_storage their_addr;						//To receive connection details
 	socklen_t addr_len;										
-	
+	ssize_t numbytes=-1;									//Number of bytes received
+
 	sockfd = socket(AF_INET,SOCK_DGRAM,0);					//Create the socket
 	if (sockfd == -1) {
 		perror("listener: socket");							//Error check
@@ -242,42 +208,34 @@ void listenUDPRequest(){
 		close(sockfd);										//Error check
 		perror("listener: bind");
 	}
-	ssize_t numbytes=-1;									//Number of bytes received
-	//printf("listener: waiting to recvfrom...\n");
-	
-	/* Receiving file size */
 
+	/* Receiving file size */
 	while(true){
 
-	    numbytes = recvfrom(sockfd, buf, MAXBUFLEN-1, 0, (struct sockaddr *)&their_addr, &addr_len);	//Receive request from a user
+		numbytes = recvfrom(sockfd, buf, sizeof(struct Message), 0, (struct sockaddr *)&their_addr, &addr_len);	//Receive request from a user
 		if(numbytes >= 0){
-			char *option,*md5,*ip;								//variables used to parse/decode the user message
-			int port;											
-			parseMsg(buf,&option,&md5,&ip,port);				//parsing the message from the user with these variables
-			cout<<option<<" "<<md5<<" "<<ip<<" "<<port<<endl;
-			int node_no = md5sumhash(md5,nodes.size());			//calculate the md5sumhash of the md5sum received in the message 
+			struct Message *msg = (struct Message *)buf;				//message recieved storage
+			int node_no = md5sumhash(msg->md5,nodes.size());			//calculate the md5sumhash of the md5sum received in the message 
 
-			cout<<node_no<<","<<whoami.ID<<endl;
 
-			if(node_no==whoami.ID){								//The node checks if the message is for itself or some other node by nodeID
+			if(node_no==whoami.ID){										//The node checks if the message is for itself or some other node by nodeID
 				cout<<"yes ip matched\n"<<endl;
-				int tcpsocket = connectTCP(ip, port);			//If this node is to serve to the request, establish a TCP connection with the client
+				int tcpsocket = connectTCP(msg->IP, ntohl(msg->Port));	//If this node is to serve to the request, establish a TCP connection with the client
 				cout<<"tcpsocket: "<<tcpsocket<<endl;
 
-				if(strcmp(option,"Get")==0){					//In case of a Get request from the client -
-					cout<<"before sending file: "<<md5<<endl;		//send the file to client
-					sendFile(md5,tcpsocket);					//Call the sendFile function. client gets the file!	
-					cout<<"after sending file"<<endl;				
+				if(strcmp(msg->Option,"Get")==0){					//In case of a Get request from the client -
+					//send the file to client
+					sendFile(msg->md5,tcpsocket);					//Call the sendFile function. client gets the file!	
 				}
-				else{											//In case of a Store request - 
-					cout<<"before storing file"<<endl;											//recieve and store the file from client
-					storeFile(tcpsocket,md5);					//storeFile called, the file gets stored to the node
-					cout<<"after storing file"<<endl;
+				//In case of a Store request
+				else{											 
+					//recieve and store the file from client
+					storeFile(tcpsocket,msg->md5);					//storeFile called, the file gets stored to the node
 				}
 			}
-			else{												//In case the request is to be served by some other node -
-				cout<<buf<<endl;
-				sendUDPRequest(node_no,buf);					//Send the message to the correct node (based on md5sumhash) over a UDP connetion
+			//In case the request is to be served by some other node
+			else{
+				sendUDPRequest(node_no,msg);					//Send the message to the correct node (based on md5sumhash) over a UDP connetion
 			}
 		}  
 	}  

@@ -25,6 +25,19 @@ struct node{
 	char Folder_Path[100];
 };
 
+/* Message is a struct that stores the message information
+ * Option : "Store" or "Get"
+ * md5 : md5sum of the file
+ * IP : IP of the User
+ * Port : Port On which it listens
+ */
+struct Message{
+    char Option[10];
+    char md5[40];
+    char IP[20];
+    int Port;
+};
+
 /*this function takes confugration file name and a vector as inputs and fill the details
  *of each node in the struct and put in the vector
  */
@@ -36,13 +49,14 @@ int parse_conf_file(char * file, vector<struct node> &v){
 
     if(conf_file){    // if the file is opened then
     	while(getline(conf_file, line)){       //get line until eof is encountered
+            
             //read inputs as formatted string IP:PORT FOLDER
     		sscanf(line.c_str(),"%[^:]%*[:]%d%*[ ]%s", temp.IP, &temp.PORT, temp.Folder_Path);
-    		temp.ID=id;   //assign the node ID
+    		temp.ID=id;           //assign the node ID
     		v.push_back(temp);    //push back in vector
     		id++;
     	}
-    	conf_file.close();     //close the file
+    	conf_file.close();        //close the file
         return 1;
     }
     else{
@@ -57,20 +71,5 @@ void Print(std::vector<struct node> Nodes){
         cout<<Nodes[i].ID<<" "<<Nodes[i].IP<<" "<<Nodes[i].PORT<<" "<<Nodes[i].Folder_Path<<endl;
     }
 }
-/*
-//main function
-int main(int argc, char *argv[]){
-    //check if the file name has entered or not
-	if(argc != 2) {
-      cout << "Please give the confugration file as an argument .\n";
-      return -1;
-    }
-    vector<struct node> Nodes;  //Vector to store the nodes information
-    //parse the file
-    parse_conf_file(argv[1], Nodes);
-    //Print(Nodes);
-    
-	return 0;
-}*/
 
 #endif
