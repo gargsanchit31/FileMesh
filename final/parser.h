@@ -1,3 +1,11 @@
+/*
+ * This file contains the functions parse_conf_file which parses the confugration file "FileMesh.cfg"
+ *
+ * Also it contains the following Structs
+ * Message and node
+ */
+
+
 #ifndef _PARSER
 #define _PARSER
 
@@ -37,6 +45,12 @@ struct Message{
     char IP[20];
     int Port;
 };
+
+struct thread_arg{
+    char md5[40];
+    int socket;
+};
+
 
 /*this function takes confugration file name and a vector as inputs and fill the details
  *of each node in the struct and put in the vector

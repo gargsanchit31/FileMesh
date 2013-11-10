@@ -64,7 +64,7 @@ void sendUDPRequest(int nodeID, struct Message msg) {
 //Function to bind a tcp socket to a sockaddr_in struct and listen on a incomming tcp connect request
 //p.s. error checking exits on error to prevent further damage
 //takes self IP as input and returns the socket descriptor it has opened
-int bindOnTCP(char* myIP) {
+int bindOnTCP(char* myIP, int& port_no) {
 	//variable lnitialisiation
 	int sockfd,bd;
 	struct sockaddr_in my_addr;
@@ -80,9 +80,11 @@ int bindOnTCP(char* myIP) {
 	// filling data into struct sockaddr_in 
 	memset(&my_addr, 0, sizeof my_addr);
 	my_addr.sin_family = AF_INET;
-	my_addr.sin_port = htons(TCPPORT);				//tcpport user is listening
+	//my_addr.sin_port = htons(TCPPORT);				//tcpport user is listening
+	my_addr.sin_port =0;
+	//my_addr.sin_port = htons(0);				//tcpport user is listening
 	my_addr.sin_addr.s_addr = inet_addr(myIP);		//Self IP
-	
+	//my_addr.sin_port = ;				//tcpport user is listening
 	// reuse address for the socket referred to by the file descriptor sockfd
 	int yes=1;
 	if (setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int)) == -1) {
@@ -97,6 +99,9 @@ int bindOnTCP(char* myIP) {
 		perror("listener: bind");
 	}
 
+	getsockname(sockfd,(struct sockaddr*)&my_addr, &addr_len);
+
+	cout<<ntohs(my_addr.sin_port)<<endl;
 	//listening on the socket with max connections possible = BACKLOG
 	if (listen(sockfd, BACKLOG) == -1) {
 		perror("listen");
@@ -168,6 +173,8 @@ case of a Get request. It takes the socket descriptor on which TCP connection ha
 and the md5sum as arguments.
 */
 void receivefileTCP(const char* md5, int socketfd){
+
+
 	char buf[MAXBUFLEN];							//The buffer to receive bytes from the user
 	ssize_t numbytes=-1;							//Number of bytes received for file content
 	int recv_size;									//Number of bytes received for file size
@@ -202,6 +209,8 @@ void receivefileTCP(const char* md5, int socketfd){
 //the option  and filename field is the same field it sent in the original
 //udp request it sent
 void acceptTCP(int sockfd, char* option, char* filename) {
+	
+
 	int new_fd;
 	string storage_path;								//where the file should be stored
 	struct sockaddr_storage their_addr;					//other struct to captue incomming request's host info
@@ -273,9 +282,12 @@ int main(int argc, char* argv[]) {
 	strcpy(msg.Option,argv[2]);
 	strcpy(msg.md5,md);
 	strcpy(msg.IP,myIP);
-	msg.Port = htonl(TCPPORT);
+	
 
-	int tcpsockfd = bindOnTCP(myIP);			//First bind the TCP for incoming connections
+	//int tcpsockfd = bindOnTCP(myIP);			//First bind the TCP for incoming connections
+	int tcpsockfd = bindOnTCP(myIP, msg.Port);			//First bind the TCP for incoming connections
+	//msg.Port = htonl(TCPPORT);
+	cout<<msg.Port<<endl;
 	sendUDPRequest(nodeid,msg);					//send the UDP request
 	acceptTCP(tcpsockfd,argv[2],argv[3]);		//then wait to accept the tcp request which is coming 
 

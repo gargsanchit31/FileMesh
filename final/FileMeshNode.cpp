@@ -1,4 +1,8 @@
 /**The FileMeshNode program that implements the nodes in the mesh */
+extern "C"
+ {
+    #include <pthread.h>
+ }
 #include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,6 +18,7 @@
 #include <netdb.h>
 #include <sstream>
 #include <vector>
+//#include <pthread.h>
 
 #include "parser.h"			//The functions that parse the config file 
 #include "md5.h"			//The md5sum hash and some other functions and calculations	
@@ -57,7 +62,10 @@ The storeFile(..) function is called by a node to receive a file from the client
 case of a Store request. It takes the socket descriptor on which TCP connection has been established
 and the md5sum as arguments.
 */
-void storeFile(int socketfd, char* md5){
+void* storeFile(void* args){
+	struct thread_arg* arg = (struct thread_arg *)args;
+	char * md5 = arg->md5;
+	int socketfd = arg->socket;
 	char buf[MAXBUFLEN];						//The buffer to receive bytes from the user
 	ssize_t numbytes=-1;						//Number of bytes received for file content
 	int recv_size;								//Number of bytes received for file size
@@ -91,7 +99,10 @@ void storeFile(int socketfd, char* md5){
 The sendFile(..) function sends the requested file to the user. In case the user makes a Get request,
 this function is called and over the already established TCP connection, the file is transferred.
 */
-void sendFile(char* md5, int socketid) {
+void* sendFile(void* args) {
+	struct thread_arg* arg = (struct thread_arg *)args;
+	char * md5 = arg->md5;
+	int socketid = arg->socket;
 	long lSize;											//The file size
 	char* buffer;										//Storage buffer
 	size_t result;							
@@ -215,22 +226,42 @@ void listenUDPRequest(){
 		numbytes = recvfrom(sockfd, buf, sizeof(struct Message), 0, (struct sockaddr *)&their_addr, &addr_len);	//Receive request from a user
 		if(numbytes >= 0){
 			struct Message *msg = (struct Message *)buf;				//message recieved storage
+			struct thread_arg	 t_arg;									//holds the argument to be passed in calling new thread
 			int node_no = md5sumhash(msg->md5,nodes.size());			//calculate the md5sumhash of the md5sum received in the message 
-
+			int iret1;
+			
 
 			if(node_no==whoami.ID){										//The node checks if the message is for itself or some other node by nodeID
 				cout<<"yes ip matched\n"<<endl;
 				int tcpsocket = connectTCP(msg->IP, ntohl(msg->Port));	//If this node is to serve to the request, establish a TCP connection with the client
 				cout<<"tcpsocket: "<<tcpsocket<<endl;
+				char tmp_md5[40];
+				strcpy(tmp_md5, msg->md5);
+				strcpy(t_arg.md5, tmp_md5);
+				t_arg.socket = tcpsocket;
 
 				if(strcmp(msg->Option,"Get")==0){					//In case of a Get request from the client -
 					//send the file to client
-					sendFile(msg->md5,tcpsocket);					//Call the sendFile function. client gets the file!	
+					pthread_t *tcpThread =new pthread_t;
+					iret1 = pthread_create( tcpThread, NULL, &sendFile, (void *)&t_arg);
+					//sendFile(msg->md5,tcpsocket);					//Call the sendFile function. client gets the file!	
+					if (iret1){
+			        	printf("ERROR; return code from pthread_create() is %d\n", iret1);
+			        	exit(-1);
+			      	}
+
 				}
 				//In case of a Store request
 				else{											 
 					//recieve and store the file from client
-					storeFile(tcpsocket,msg->md5);					//storeFile called, the file gets stored to the node
+					//storeFile(tcpsocket,msg->md5);					//storeFile called, the file gets stored to the node
+					pthread_t *tcpThread =new pthread_t;
+					iret1 = pthread_create( tcpThread, NULL, &storeFile, (void *)&t_arg);
+					//sendFile(msg->md5,tcpsocket);					//Call the sendFile function. client gets the file!	
+					if (iret1){
+			        	printf("ERROR; return code from pthread_create() is %d\n", iret1);
+			        	exit(-1);
+			      	}
 				}
 			}
 			//In case the request is to be served by some other node
@@ -250,11 +281,15 @@ int main(int argc, char* argv[]){
 		cout<<"usage: <executable> <Node ID>"<<endl;		//Run the executable with nodeID as command line argument
 		return -1;
 	}
+	//int rc1,rc2;
+	//pthread_t send_handler, receive_handler ; // declare 2 threads each to handle sending and receiving
+	//struct thread_arg *t_arg;
 
 	parse_conf_file(CONF_FILE,nodes);						//Parse the configuration file first
 	int n_id = atoi(argv[1]);								//Get nodeID as int
 	whoami=nodes[n_id];										//the whoami node struct stores information about the current node	
 	cout<<whoami.ID<<","<<whoami.IP<<","<<whoami.PORT<<endl;
+
 	listenUDPRequest();										//Start listening to a UDP connection to accept requests and then process them.
 	return 0;
 }

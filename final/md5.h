@@ -1,3 +1,7 @@
+/*
+ * this contains function which calculates the md5sum and a function which calculates the nodeID
+ * of the corresponding calclated md5sum
+ */
 #ifndef _MD5
 #define _MD5
 #include <iostream>
