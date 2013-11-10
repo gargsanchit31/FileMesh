@@ -144,7 +144,7 @@ void storefileTCP(char* file_path, int socketid) {
 		close(socketid);
 }
 
-void receivefileTCP(char* md5, int socketfd){
+void receivefileTCP(const char* md5, int socketfd){
 	char buf[MAXBUFLEN];
 	ssize_t numbytes=-1;
 	int recv_size;
@@ -174,7 +174,7 @@ void receivefileTCP(char* md5, int socketfd){
 
 void acceptTCP(int sockfd, char* option, char* filename) {
 	int new_fd;
-	
+	string storage_path;
 	struct sockaddr_storage their_addr;
 	
 	unsigned int sin_size = sizeof(struct sockaddr_in);
@@ -188,7 +188,9 @@ void acceptTCP(int sockfd, char* option, char* filename) {
 		storefileTCP(filename,new_fd);		
 	}
 	else if(strcmp(option, "Get")==0){
-		receivefileTCP(filename,new_fd);
+		cout<<"Enter the <file/path/filename>: ";
+		cin>>storage_path;
+		receivefileTCP(storage_path.c_str(),new_fd);
 	}
 	else{
 		cout<<"Something went wrong. We will figure it out soon."<<endl;		
