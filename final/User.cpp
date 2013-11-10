@@ -81,8 +81,8 @@ int bindOnTCP(char* myIP, int& port_no) {
 	memset(&my_addr, 0, sizeof my_addr);
 	my_addr.sin_family = AF_INET;
 	//my_addr.sin_port = htons(TCPPORT);				//tcpport user is listening
-	my_addr.sin_port =0;
-	//my_addr.sin_port = htons(0);				//tcpport user is listening
+	//my_addr.sin_port =0;
+	my_addr.sin_port = htons(9600);				//tcpport user is listening
 	my_addr.sin_addr.s_addr = inet_addr(myIP);		//Self IP
 	//my_addr.sin_port = ;				//tcpport user is listening
 	// reuse address for the socket referred to by the file descriptor sockfd
@@ -99,14 +99,20 @@ int bindOnTCP(char* myIP, int& port_no) {
 		perror("listener: bind");
 	}
 
-	getsockname(sockfd,(struct sockaddr*)&my_addr, &addr_len);
+	
 
-	cout<<ntohs(my_addr.sin_port)<<endl;
 	//listening on the socket with max connections possible = BACKLOG
 	if (listen(sockfd, BACKLOG) == -1) {
 		perror("listen");
 		exit(1);
 	}
+	
+	getsockname(sockfd,(struct sockaddr*)&my_addr, &addr_len);
+	cout<< ntohs(my_addr.sin_port)<<endl;
+	
+
+	
+	port_no = my_addr.sin_port;
 	printf("listener: waiting to recv...\n");
 	return sockfd;
 }
