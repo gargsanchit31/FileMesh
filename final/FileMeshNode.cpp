@@ -199,7 +199,7 @@ which receives this requests acts on it accordingly.
 void listenUDPRequest(){
 	int sockfd,bd;											//The UDP socket
 	struct sockaddr_in my_addr;								//Struct to fill in connection details
-	char buf[MAXBUFLEN];									//Buffer to receive message
+	
 	struct sockaddr_storage their_addr;						//To receive connection details
 	socklen_t addr_len;										
 	ssize_t numbytes=-1;									//Number of bytes received
@@ -222,10 +222,11 @@ void listenUDPRequest(){
 
 	/* Receiving file size */
 	while(true){
-
+		char buf[MAXBUFLEN];									//Buffer to receive message
 		numbytes = recvfrom(sockfd, buf, sizeof(struct Message), 0, (struct sockaddr *)&their_addr, &addr_len);	//Receive request from a user
 		if(numbytes >= 0){
 			struct Message *msg = (struct Message *)buf;				//message recieved storage
+			cout<<"88888nb   "<<ntohs(msg->Port)<<endl;
 			struct thread_arg	 t_arg;									//holds the argument to be passed in calling new thread
 			int node_no = md5sumhash(msg->md5,nodes.size());			//calculate the md5sumhash of the md5sum received in the message 
 			int iret1;
@@ -233,7 +234,7 @@ void listenUDPRequest(){
 
 			if(node_no==whoami.ID){										//The node checks if the message is for itself or some other node by nodeID
 				cout<<"yes ip matched\n"<<endl;
-				int tcpsocket = connectTCP(msg->IP, ntohl(msg->Port));	//If this node is to serve to the request, establish a TCP connection with the client
+				int tcpsocket = connectTCP(msg->IP, ntohs(msg->Port));	//If this node is to serve to the request, establish a TCP connection with the client
 				cout<<"tcpsocket: "<<tcpsocket<<endl;
 				char tmp_md5[40];
 				strcpy(tmp_md5, msg->md5);

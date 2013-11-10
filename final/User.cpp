@@ -82,7 +82,7 @@ int bindOnTCP(char* myIP, int& port_no) {
 	my_addr.sin_family = AF_INET;
 	//my_addr.sin_port = htons(TCPPORT);				//tcpport user is listening
 	//my_addr.sin_port =0;
-	my_addr.sin_port = htons(9600);				//tcpport user is listening
+	my_addr.sin_port = htons(10200);				//tcpport user is listening
 	my_addr.sin_addr.s_addr = inet_addr(myIP);		//Self IP
 	//my_addr.sin_port = ;				//tcpport user is listening
 	// reuse address for the socket referred to by the file descriptor sockfd
