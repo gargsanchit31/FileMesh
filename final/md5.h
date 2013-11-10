@@ -69,17 +69,4 @@ char* getmyIP() {
 	return inet_ntoa(((struct sockaddr_in *)&ifr.ifr_addr)->sin_addr);
 }
 
-
-
-
-/*int main(int argc, char* argv[]) {
-	
-	string s = argv[1];
-	//cout<<s<<endl;
-	s = md5sum(s);
-	cout<<s<<endl;	
-	int k = md5sumhash(s,2);
-	cout<<"mapping: "<<k<<endl;
-	return 1;
-}*/
 #endif
