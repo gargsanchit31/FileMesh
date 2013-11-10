@@ -17,6 +17,7 @@
 #include <sys/ioctl.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#include <time.h> 
 #include "parser.h"
 #include "md5.h"
 #define TCPPORT 6401		//the tcpport on which the user will be listening
@@ -64,7 +65,7 @@ void sendUDPRequest(int nodeID, struct Message msg) {
 //Function to bind a tcp socket to a sockaddr_in struct and listen on a incomming tcp connect request
 //p.s. error checking exits on error to prevent further damage
 //takes self IP as input and returns the socket descriptor it has opened
-int bindOnTCP(char* myIP, int& port_no) {
+int bindOnTCP(char* myIP, int* port_no) {
 	//variable lnitialisiation
 	int sockfd,bd;
 	struct sockaddr_in my_addr;
@@ -82,15 +83,19 @@ int bindOnTCP(char* myIP, int& port_no) {
 	my_addr.sin_family = AF_INET;
 	//my_addr.sin_port = htons(TCPPORT);				//tcpport user is listening
 	//my_addr.sin_port =0;
-	my_addr.sin_port = htons(10200);				//tcpport user is listening
+	
+	srand(time(NULL));
+	int port = rand()%50000;
+	port+=2000;
+	my_addr.sin_port = htons(port);				//tcpport user is listening
 	my_addr.sin_addr.s_addr = inet_addr(myIP);		//Self IP
 	//my_addr.sin_port = ;				//tcpport user is listening
 	// reuse address for the socket referred to by the file descriptor sockfd
-	int yes=1;
+	/*int yes=1;
 	if (setsockopt(sockfd,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int)) == -1) {
 		perror("setsockopt");
 		exit(1);
-	}
+	}*/
 
 	//binding of socket to struct for further listening
 	bd = bind(sockfd, (struct sockaddr *) &my_addr, sizeof my_addr);
@@ -99,7 +104,6 @@ int bindOnTCP(char* myIP, int& port_no) {
 		perror("listener: bind");
 	}
 
-	
 
 	//listening on the socket with max connections possible = BACKLOG
 	if (listen(sockfd, BACKLOG) == -1) {
@@ -107,12 +111,13 @@ int bindOnTCP(char* myIP, int& port_no) {
 		exit(1);
 	}
 	
+	struct sockaddr_in mine;
 	getsockname(sockfd,(struct sockaddr*)&my_addr, &addr_len);
 	cout<< ntohs(my_addr.sin_port)<<endl;
 	
 
 	
-	port_no = my_addr.sin_port;
+	*port_no = my_addr.sin_port;
 	printf("listener: waiting to recv...\n");
 	return sockfd;
 }
@@ -291,7 +296,7 @@ int main(int argc, char* argv[]) {
 	
 
 	//int tcpsockfd = bindOnTCP(myIP);			//First bind the TCP for incoming connections
-	int tcpsockfd = bindOnTCP(myIP, msg.Port);			//First bind the TCP for incoming connections
+	int tcpsockfd = bindOnTCP(myIP, &(msg.Port));			//First bind the TCP for incoming connections
 	//msg.Port = htonl(TCPPORT);
 	cout<<msg.Port<<endl;
 	sendUDPRequest(nodeid,msg);					//send the UDP request
